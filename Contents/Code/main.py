@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import json
 import constants
 import util
-import pagination
 import history
 from flow_builder import FlowBuilder
 from media_info import MediaInfo
@@ -38,17 +36,24 @@ def HandleLetter(path, name):
         path = item['path']
 
         oc.add(DirectoryObject(
-            key=Callback(HandleAuthor, type='author', path=path, name=name),
+            key=Callback(HandleAuthor, path=path, name=name),
             title=name
         ))
 
     return oc
 
 @route(constants.PREFIX + '/author')
-def HandleAuthor(type, path, name, thumb=None):
-    oc = ObjectContainer(title2=unicode(L(name)))
+def HandleAuthor(operation=None, **params):
+    media_info = MediaInfo(**params)
 
-    response = service.get_author_books(path)
+    if operation == 'add':
+        service.queue.add(media_info)
+    elif operation == 'remove':
+        service.queue.remove(media_info)
+
+    oc = ObjectContainer(title2=unicode(L(params['name'])))
+
+    response = service.get_author_books(params['path'])
 
     for item in response:
         path = item['path']
@@ -57,27 +62,39 @@ def HandleAuthor(type, path, name, thumb=None):
         rating = item['rating']
         thumb = service.URL + item['thumb']
 
+        params = {
+            'type': 'tracks',
+            'path' :path,
+            'name': book_name,
+            'thumb': thumb,
+            'artist': params['name'],
+            'content': content,
+            'rating': rating
+        }
+
         oc.add(DirectoryObject(
-            key=Callback(HandleTracks, type='book', path=path, name=book_name, thumb=thumb,
-                         artist=name, content=content, rating=rating),
+            key=Callback(HandleTracks, **params),
             title=book_name,
             thumb=thumb
         ))
 
+    service.queue.append_controls(oc, HandleAuthor, media_info)
+
     return oc
 
 @route(constants.PREFIX + '/tracks')
-def HandleTracks(type, path, name, thumb, artist, content, rating, operation=None, container=False):
-    oc = ObjectContainer(title2=unicode(L(name)))
-
-    media_info = MediaInfo(type=type, path=path, name=name, thumb=thumb, artist=artist, content=content, rating=rating)
+def HandleTracks(operation=None, container=False, **params):
+    Log(params)
+    media_info = MediaInfo(**params)
 
     if operation == 'add':
         service.queue.add(media_info)
     elif operation == 'remove':
         service.queue.remove(media_info)
 
-    playlist_url = service.get_playlist_url(path)
+    oc = ObjectContainer(title2=unicode(L(media_info['name'])))
+
+    playlist_url = service.get_playlist_url(media_info['path'])
 
     response = service.get_audio_tracks(playlist_url)
 
@@ -89,13 +106,23 @@ def HandleTracks(type, path, name, thumb, artist, content, rating, operation=Non
         path = "https://archive.org" + sources[0]['file']
         format = 'mp3'
         bitrate = 0
-        media_type = 'track'
 
         Log(thumb)
 
-        oc.add(GetAudioTrack(type=type, media_type=media_type, path=path, name=name, thumb=thumb,
-                             artist=artist, format=format,
-                             bitrate=bitrate, duration=duration))
+        new_params = {
+            'type': 'track',
+            'path': path,
+            'name': name,
+            'thumb': thumb,
+            'format': format,
+            'bitrate': bitrate,
+            'duration': duration
+        }
+
+        if 'artist' in params:
+            new_params['artist'] = media_info['artist']
+
+        oc.add(HandleTrack(**new_params))
 
     if str(container) == 'False':
         history.push_to_history(media_info)
@@ -103,9 +130,11 @@ def HandleTracks(type, path, name, thumb, artist, content, rating, operation=Non
 
     return oc
 
-@route(constants.PREFIX + '/audio_track')
-def GetAudioTrack(type, media_type, path, name, thumb, artist, format, bitrate, duration, container=False):
-    if 'm4a' in format:
+@route(constants.PREFIX + '/track')
+def HandleTrack(container=False, **params):
+    media_info = MediaInfo(**params)
+
+    if 'm4a' in media_info['format']:
         audio_container = Container.MP4
         audio_codec = AudioCodec.AAC
     else:
@@ -114,31 +143,20 @@ def GetAudioTrack(type, media_type, path, name, thumb, artist, format, bitrate, 
 
     url_items = [
         {
-            "url": path,
+            "url": media_info['path'],
             "config": {
                 "container": audio_container,
                 "audio_codec": audio_codec,
-                "bitrate": bitrate,
-                "duration": duration
+                "bitrate": media_info['bitrate'],
+                "duration": media_info['duration']
             }
         }
     ]
 
-    media_info = MediaInfo(
-        media_type=media_type,
-        path=path,
-        name=name,
-        thumb=thumb,
-        artist=artist,
-        format=format,
-        bitrate=bitrate,
-        duration=duration
-    )
-
     track = AudioMetadataObjectForURL(media_info, url_items=url_items, player=PlayAudio)
 
     if container:
-        oc = ObjectContainer(title2=unicode(name))
+        oc = ObjectContainer(title2=unicode(media_info['name']))
 
         oc.add(track)
 
@@ -147,13 +165,15 @@ def GetAudioTrack(type, media_type, path, name, thumb, artist, format, bitrate, 
         return track
 
 def AudioMetadataObjectForURL(media_info, url_items, player):
-    metadata_object = builder.build_metadata_object(media_type=media_info['media_type'], title=media_info['name'])
+    metadata_object = builder.build_metadata_object(media_type=media_info['type'], title=media_info['name'])
 
-    metadata_object.key = Callback(GetAudioTrack, container=True, **media_info)
+    metadata_object.key = Callback(HandleTrack, container=True, **media_info)
     metadata_object.rating_key = unicode(media_info['name'])
     metadata_object.duration = int(media_info['duration']) * 1000
     metadata_object.thumb = media_info['thumb']
-    metadata_object.artist = media_info['artist']
+
+    if 'artist' in media_info:
+        metadata_object.artist = media_info['artist']
 
     metadata_object.items.extend(MediaObjectsForURL(url_items, player))
 
@@ -170,29 +190,28 @@ def HandleSearch(query=None):
         path = movie['path']
 
         oc.add(DirectoryObject(
-            key=Callback(HandleContainer, type='book', path=path, name=name, thumb='thumb'),
-            title=unicode(name),
-            thumb='thumb'
+            key=Callback(HandleContainer, type='tracks', path=path, name=name),
+            title=unicode(name)
         ))
 
     return oc
 
 @route(constants.PREFIX + '/container')
-def HandleContainer(type, path, name, thumb=None):
+def HandleContainer(**params):
+    type = params['type']
+
     if type == 'author':
-        return HandleAuthor(type=type, path=path, name=name, thumb=thumb)
-    elif type == 'book':
-        return HandleBook(type=type, path=path, name=name, thumb=thumb)
+        return HandleAuthor(**params)
+    elif type == 'tracks':
+        return HandleTracks(**params)
 
 @route(constants.PREFIX + '/queue')
 def HandleQueue():
     oc = ObjectContainer(title2=unicode(L('Queue')))
 
     for media_info in service.queue.data:
-        type = media_info['type']
-
         oc.add(DirectoryObject(
-            key=Callback(HandleContainer, type=type, **media_info),
+            key=Callback(HandleContainer, **media_info),
             title=util.sanitize(media_info['name']),
             thumb=media_info['thumb']
         ))
@@ -207,19 +226,10 @@ def HandleHistory():
 
     if history_object:
         for item in sorted(history_object.values(), key=lambda k: k['time'], reverse=True):
-            type = item['type']
-            path = item['path']
-            name = item['name']
-
-            if item['thumb']:
-                thumb = service.get_thumb(item['thumb'])
-            else:
-                thumb = None
-
             oc.add(DirectoryObject(
-                key=Callback(HandleContainer, type=type, path=path, name=name, thumb=thumb),
-                title=unicode(name),
-                thumb=thumb
+                key=Callback(HandleContainer, **item),
+                title=unicode(item['name']),
+                thumb=item['thumb']
             ))
 
     return oc
