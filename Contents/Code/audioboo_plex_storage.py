@@ -1,7 +1,7 @@
 import constants
 from plex_storage import PlexStorage
 
-class AudiobooStorage(PlexStorage):
+class AudiobooPlexStorage(PlexStorage):
     def __init__(self, file_name):
         PlexStorage.__init__(self, Core.storage, file_name)
 

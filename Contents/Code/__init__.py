@@ -3,9 +3,9 @@
 import util
 import history
 import constants
-from plex_service import PlexService
+from audioboo_plex_service import AudiobooPlexService
 
-service = PlexService()
+service = AudiobooPlexService()
 
 import main
 

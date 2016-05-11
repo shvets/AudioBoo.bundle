@@ -1,9 +1,9 @@
 from audioboo_service import AudiobooService
 
-from audioboo_storage import AudiobooStorage
+from audioboo_plex_storage import AudiobooPlexStorage
 
-class PlexService(AudiobooService):
+class AudiobooPlexService(AudiobooService):
     def __init__(self):
         storage_name = Core.storage.abs_path(Core.storage.join_path(Core.bundle_path, 'Contents', 'audioboo.storage'))
 
-        self.queue = AudiobooStorage(storage_name)
+        self.queue = AudiobooPlexStorage(storage_name)

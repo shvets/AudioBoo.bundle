@@ -235,7 +235,19 @@ def HandleQueue():
             thumb=thumb
         ))
 
+    if len(service.queue.data) > 0:
+        oc.add(DirectoryObject(
+            key=Callback(ClearQueue),
+            title=unicode(L("Clear Queue"))
+        ))
+
     return oc
+
+@route(constants.PREFIX + '/clear_queue')
+def ClearQueue():
+    service.queue.clear()
+
+    return HandleQueue()
 
 @route(constants.PREFIX + '/history')
 def HandleHistory():
