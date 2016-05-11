@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import json
+
 import constants
 import util
 import history
@@ -19,21 +21,33 @@ def HandleLetters():
         path = item['path']
 
         oc.add(DirectoryObject(
-            key=Callback(HandleLetter, path=path, name=name),
+            key=Callback(HandleLetterGroup, path=path, name=name),
             title=name
         ))
 
     return oc
 
-@route(constants.PREFIX + '/letter')
-def HandleLetter(path, name):
+@route(constants.PREFIX + '/letter_group')
+def HandleLetterGroup(path, name):
     oc = ObjectContainer(title2=unicode(L(name)))
 
     response = service.get_authors_by_letter(path)
 
-    for item in response:
-        name = item['name']
-        path = item['path']
+    for group_name, authors in response.iteritems():
+        oc.add(DirectoryObject(
+            key=Callback(HandleLetter, name=group_name, authors=json.dumps(authors)),
+            title=group_name
+        ))
+
+    return oc
+
+@route(constants.PREFIX + '/letter')
+def HandleLetter(name, authors):
+    oc = ObjectContainer(title2=unicode(L(name)))
+
+    for author in json.loads(authors):
+        name = author['name']
+        path = author['path']
 
         oc.add(DirectoryObject(
             key=Callback(HandleAuthor, type='author', path=path, name=name),

@@ -2,6 +2,7 @@
 
 import json
 import re
+from collections import OrderedDict
 from http_service import HttpService
 
 class AudiobooService(HttpService):
@@ -26,7 +27,7 @@ class AudiobooService(HttpService):
         return list
 
     def get_authors_by_letter(self, path):
-        list = []
+        groups = OrderedDict()
 
         document = self.fetch_document(self.URL + path)
 
@@ -36,9 +37,16 @@ class AudiobooService(HttpService):
             href = item.xpath('@href')[0]
             name = item.text_content()
 
-            list.append({'path': href, 'name': name})
+            group_name = name[0:3].upper()
 
-        return list
+            if group_name not in groups.keys():
+                group = []
+
+                groups[group_name] = group
+
+            groups[group_name].append({'path': href, 'name': name})
+
+        return groups
 
     def get_author_books(self, url):
         list = []
