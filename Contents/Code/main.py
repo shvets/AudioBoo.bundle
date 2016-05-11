@@ -36,7 +36,7 @@ def HandleLetter(path, name):
         path = item['path']
 
         oc.add(DirectoryObject(
-            key=Callback(HandleAuthor, path=path, name=name),
+            key=Callback(HandleAuthor, type='author', path=path, name=name),
             title=name
         ))
 
@@ -210,10 +210,15 @@ def HandleQueue():
     oc = ObjectContainer(title2=unicode(L('Queue')))
 
     for media_info in service.queue.data:
+        if 'thumb' in media_info:
+            thumb = media_info['thumb']
+        else:
+            thumb = None
+
         oc.add(DirectoryObject(
             key=Callback(HandleContainer, **media_info),
             title=util.sanitize(media_info['name']),
-            thumb=media_info['thumb']
+            thumb=thumb
         ))
 
     return oc
