@@ -7,6 +7,9 @@ class AudiobooPlexStorage(PlexStorage):
 
         self.load()
 
+        self.register_simple_type('author')
+        self.register_simple_type('tracks')
+
     def append_controls(self, oc, handler, media_info):
         bookmark = self.find(media_info)
 
