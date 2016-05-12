@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import util
-import history
 import constants
 from audioboo_plex_service import AudiobooPlexService
+
+util.add_library("common")
+util.add_library("common_plex")
 
 service = AudiobooPlexService()
 
