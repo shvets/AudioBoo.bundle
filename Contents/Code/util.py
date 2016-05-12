@@ -28,4 +28,7 @@ def sanitize(name):
 def add_library(path):
     lib_path = Core.storage.abs_path(Core.storage.join_path(Core.bundle_path, 'Contents', 'Code', path))
 
+    Log(Core.storage.join_path(Core.bundle_path, 'Contents', 'Code', path))
+    Log(lib_path)
+
     sys.path.append(os.path.abspath(os.path.join(lib_path)))
