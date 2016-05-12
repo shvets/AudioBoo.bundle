@@ -98,17 +98,20 @@ def HandleAuthor(operation=None, **params):
 
 @route(constants.PREFIX + '/tracks_versions')
 def HandleTracksVersions(**params):
-    oc = ObjectContainer(title2=unicode(L(params['name'])))
-
     playlist_urls = service.get_playlist_urls(params['path'])
 
-    for index, playlist_url in enumerate(playlist_urls):
-        oc.add(DirectoryObject(
-            key=Callback(HandleTracks, playlist_url=playlist_url, **params),
-            title="Version " + str(index+1),
-        ))
+    if len(playlist_urls) == 1:
+        return HandleTracks(playlist_url=playlist_urls[0], **params)
+    else:
+        oc = ObjectContainer(title2=unicode(L(params['name'])))
 
-    return oc
+        for index, playlist_url in enumerate(playlist_urls):
+            oc.add(DirectoryObject(
+                key=Callback(HandleTracks, playlist_url=playlist_url, **params),
+                title="Version " + str(index+1),
+            ))
+
+        return oc
 
 @route(constants.PREFIX + '/tracks')
 def HandleTracks(operation=None, container=False, **params):
