@@ -1,4 +1,4 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
 
 import test_helper
 
@@ -32,25 +32,33 @@ class AudioBooServiceTest(unittest.TestCase):
 
         print(json.dumps(result, indent=4))
 
-    def test_get_author_book(self):
+    # def test_get_author_book(self):
+    #     letters = self.service.get_letters()
+    #
+    #     authors = self.service.get_authors_by_letter(letters[0]['path'])
+    #
+    #     group = self.get_author_group_by_index(authors, 1)
+    #
+    #     books = self.service.get_author_books(group[0]['path'])
+    #
+    #     result = self.service.get_audio_tracks(books[0]['path'])
+    #
+    #     print(json.dumps(result, indent=4))
+
+    def test_get_playlist_urls(self):
         letters = self.service.get_letters()
 
         authors = self.service.get_authors_by_letter(letters[0]['path'])
 
-        books = self.service.get_author_books(authors[1]['path'])
+        group = self.get_author_group_by_index(authors, 1)
 
-        result = self.service.get_author_book(books[0]['path'])
+        books = self.service.get_author_books(group[0]['path'])
 
-        print(json.dumps(result, indent=4))
+        result = self.service.get_playlist_urls(books[0]['path'])
 
-    def test_get_playlist_url(self):
-        letters = self.service.get_letters()
+        url = 'http://audioboo.ru/geimannil/1009-geyman-nil-koralina.html'
 
-        authors = self.service.get_authors_by_letter(letters[0]['path'])
-
-        books = self.service.get_author_books(authors[1]['path'])
-
-        result = self.service.get_playlist_url(books[0]['path'])
+        playlist_urls = self.service.get_playlist_urls(url)
 
         print result
 
@@ -59,11 +67,13 @@ class AudioBooServiceTest(unittest.TestCase):
 
         authors = self.service.get_authors_by_letter(letters[0]['path'])
 
-        books = self.service.get_author_books(authors[1]['path'])
+        group = self.get_author_group_by_index(authors, 1)
 
-        playlist_url = self.service.get_playlist_url(books[0]['path'])
+        books = self.service.get_author_books(group[0]['path'])
 
-        result = self.service.get_audio_tracks(playlist_url)
+        playlist_urls = self.service.get_playlist_urls(books[0]['path'])
+
+        result = self.service.get_audio_tracks(playlist_urls[0])
 
         print(json.dumps(result, indent=4))
 
@@ -73,6 +83,14 @@ class AudioBooServiceTest(unittest.TestCase):
         result = self.service.search(query)
 
         print(json.dumps(result, indent=4))
+
+    def get_author_group_by_index(self, authors, index):
+        i = 0
+        for key, value in authors.iteritems():
+            if i == index:
+                return value
+
+            i += 1
 
 if __name__ == '__main__':
     unittest.main()

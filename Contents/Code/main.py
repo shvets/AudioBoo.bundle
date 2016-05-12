@@ -87,7 +87,7 @@ def HandleAuthor(operation=None, **params):
         }
 
         oc.add(DirectoryObject(
-            key=Callback(HandleTracks, **params),
+            key=Callback(HandleTracksVersions, **params),
             title=book_name,
             thumb=thumb
         ))
@@ -96,9 +96,24 @@ def HandleAuthor(operation=None, **params):
 
     return oc
 
+@route(constants.PREFIX + '/tracks_versions')
+def HandleTracksVersions(**params):
+    oc = ObjectContainer(title2=unicode(L(params['name'])))
+
+    playlist_urls = service.get_playlist_urls(params['path'])
+
+    for index, playlist_url in enumerate(playlist_urls):
+        oc.add(DirectoryObject(
+            key=Callback(HandleTracks, playlist_url=playlist_url, **params),
+            title="Version " + str(index+1),
+        ))
+
+    return oc
+
 @route(constants.PREFIX + '/tracks')
 def HandleTracks(operation=None, container=False, **params):
-    Log(params)
+    Log(params['playlist_url'])
+
     media_info = MediaInfo(**params)
 
     if operation == 'add':
@@ -106,11 +121,9 @@ def HandleTracks(operation=None, container=False, **params):
     elif operation == 'remove':
         service.queue.remove(media_info)
 
-    oc = ObjectContainer(title2=unicode(L(media_info['name'])))
+    oc = ObjectContainer(title2=unicode(L(params['name'])))
 
-    playlist_url = service.get_playlist_url(media_info['path'])
-
-    response = service.get_audio_tracks(playlist_url)
+    response = service.get_audio_tracks(params['playlist_url'])
 
     for item in response:
         name = item['title']
@@ -121,7 +134,7 @@ def HandleTracks(operation=None, container=False, **params):
         format = 'mp3'
         bitrate = 0
 
-        Log(thumb)
+        # Log(thumb)
 
         new_params = {
             'type': 'track',

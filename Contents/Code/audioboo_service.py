@@ -66,26 +66,39 @@ class AudiobooService(HttpService):
 
         return list
 
-    def get_playlist_url(self, url):
+    def get_playlist_urls(self, url):
+        list = []
+
         document = self.fetch_document(url)
 
-        return document.xpath('//object')[0].get("data")
+        result = document.xpath('//object')
+
+        for item in result:
+            list.append(item.get("data"))
+
+        return list
 
     def get_audio_tracks(self, url):
+        list = []
+
         document = self.fetch_document(url)
 
         scripts = document.xpath('//script')
 
-        script = scripts[len(scripts)-1].text_content()
+        for script in scripts:
+            text = script.text_content()
 
-        index1 = script.find("Play('jw6',")
-        index2 = script.find('{"start":0,')
+            index1 = text.find("Play('jw6',")
+            index2 = text.find('{"start":0,')
 
-        content = script[index1 + 10:index2-1].strip()
+            if index1 >= 0 and index2 >= 0:
+                content = text[index1 + 10:index2 - 1].strip()
 
-        content = content[2:len(content)-1].strip()
+                content = content[2:len(content) - 1].strip()
 
-        return json.loads(content)
+                list.append(json.loads(content))
+
+        return list[0]
 
     def search(self, query, page=1):
         url = self.URL + "/engine/ajax/search.php"
