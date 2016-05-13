@@ -7,3 +7,6 @@ class AudiobooPlexService(AudiobooService):
         storage_name = Core.storage.abs_path(Core.storage.join_path(Core.bundle_path, 'Contents', 'audioboo.storage'))
 
         self.queue = AudiobooPlexStorage(storage_name)
+
+        self.queue.register_simple_type('author')
+        self.queue.register_simple_type('tracks')
