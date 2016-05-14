@@ -1,13 +1,13 @@
 KEY_HISTORY = 'history'
 HISTORY_SIZE = 60
 
-def push_to_history(item):
+def push_to_history(Data, item):
     history = Data.LoadObject(KEY_HISTORY)
 
     if not history:
         history = {}
 
-    path = item['path']
+    id = item['id']
 
     hash = {}
 
@@ -16,7 +16,7 @@ def push_to_history(item):
 
     hash['time'] = Datetime.TimestampFromDatetime(Datetime.Now())
 
-    history[path] = hash
+    history[id] = hash
 
     # Trim old items
     if len(history) > HISTORY_SIZE:
@@ -29,9 +29,9 @@ def push_to_history(item):
         history = {}
 
         for it in items:
-            history[it['path']] = it
+            history[it['id']] = it
 
     Data.SaveObject(KEY_HISTORY, history)
 
-def load_history():
+def load_history(Data):
     return Data.LoadObject(KEY_HISTORY)

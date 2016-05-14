@@ -78,7 +78,7 @@ def HandleAuthor(operation=None, **params):
 
         params = {
             'type': 'tracks',
-            'path' :path,
+            'id' : path,
             'name': book_name,
             'thumb': thumb,
             'artist': params['name'],
@@ -98,7 +98,7 @@ def HandleAuthor(operation=None, **params):
 
 @route(constants.PREFIX + '/tracks_versions')
 def HandleTracksVersions(**params):
-    playlist_urls = service.get_playlist_urls(params['path'])
+    playlist_urls = service.get_playlist_urls(params['id'])
 
     if len(playlist_urls) == 1:
         return HandleTracks(playlist_url=playlist_urls[0], **params)
@@ -141,9 +141,10 @@ def HandleTracks(operation=None, container=False, **params):
 
         new_params = {
             'type': 'track',
-            'path': path,
+            'id': path,
             'name': name,
             'thumb': thumb,
+            'artist': params['artist'],
             'format': format,
             'bitrate': bitrate,
             'duration': duration
@@ -155,7 +156,7 @@ def HandleTracks(operation=None, container=False, **params):
         oc.add(HandleTrack(**new_params))
 
     if str(container) == 'False':
-        history.push_to_history(media_info)
+        history.push_to_history(Data, media_info)
         service.queue.append_controls(oc, HandleTracks, media_info)
 
     return oc
@@ -173,7 +174,7 @@ def HandleTrack(container=False, **params):
 
     url_items = [
         {
-            "url": media_info['path'],
+            "url": media_info['id'],
             "config": {
                 "container": audio_container,
                 "audio_codec": audio_codec,
@@ -199,8 +200,10 @@ def AudioMetadataObjectForURL(media_info, url_items, player):
 
     metadata_object.key = Callback(HandleTrack, container=True, **media_info)
     metadata_object.rating_key = unicode(media_info['name'])
-    metadata_object.duration = int(media_info['duration']) * 1000
     metadata_object.thumb = media_info['thumb']
+
+    if 'duration' in media_info:
+        metadata_object.duration = int(media_info['duration']) * 1000
 
     if 'artist' in media_info:
         metadata_object.artist = media_info['artist']
@@ -267,7 +270,7 @@ def ClearQueue():
 
 @route(constants.PREFIX + '/history')
 def HandleHistory():
-    history_object = history.load_history()
+    history_object = history.load_history(Data)
 
     oc = ObjectContainer(title2=unicode(L('History')))
 

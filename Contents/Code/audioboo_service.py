@@ -100,7 +100,7 @@ class AudiobooService(HttpService):
 
         return list[0]
 
-    def search(self, query, page=1):
+    def search(self, query):
         url = self.URL + "/engine/ajax/search.php"
 
         headers = {'X-Requested-With': 'XMLHttpRequest'}
