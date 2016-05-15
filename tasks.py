@@ -66,10 +66,10 @@ def reset():
 @task
 def copy(plugin_dir):
     run("mkdir -p " + plugin_dir + "/Contents/Code")
-    run("mkdir -p " + plugin_dir + "/Contents/Code/common")
+    run("mkdir -p " + plugin_dir + "/Contents/Libraries/Shared")
 
     run("cp -R Contents/* " + plugin_dir + "/Contents")
-    run("cp -R Contents/Code/common/* " + plugin_dir + "/Contents/Code/common")
+    run("cp -R Contents/Libraries/Shared/* " + plugin_dir + "/Contents/Libraries/Shared")
 
     print("Files were copied.")
 
@@ -86,8 +86,8 @@ def reload():
 
 @task
 def deploy():
-    copy(plugin_dir)
     reset()
+    copy(plugin_dir)
     reload()
 
 @task

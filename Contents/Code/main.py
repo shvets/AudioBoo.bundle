@@ -60,10 +60,7 @@ def HandleLetter(name, authors):
 def HandleAuthor(operation=None, **params):
     media_info = MediaInfo(**params)
 
-    if operation == 'add':
-        service.queue.add(media_info)
-    elif operation == 'remove':
-        service.queue.remove(media_info)
+    service.handle_bookmark_operation(operation, media_info)
 
     oc = ObjectContainer(title2=unicode(L(params['name'])))
 
@@ -92,7 +89,7 @@ def HandleAuthor(operation=None, **params):
             thumb=thumb
         ))
 
-    service.queue.append_controls(oc, HandleAuthor, media_info)
+    service.append_bookmark_controls(oc, HandleAuthor, media_info)
 
     return oc
 
@@ -119,10 +116,7 @@ def HandleTracks(operation=None, container=False, **params):
 
     media_info = MediaInfo(**params)
 
-    if operation == 'add':
-        service.queue.add(media_info)
-    elif operation == 'remove':
-        service.queue.remove(media_info)
+    service.handle_bookmark_operation(operation, media_info)
 
     oc = ObjectContainer(title2=unicode(L(params['name'])))
 
@@ -157,7 +151,7 @@ def HandleTracks(operation=None, container=False, **params):
 
     if str(container) == 'False':
         history.push_to_history(Data, media_info)
-        service.queue.append_controls(oc, HandleTracks, media_info)
+        service.append_bookmark_controls(oc, HandleTracks, media_info)
 
     return oc
 
