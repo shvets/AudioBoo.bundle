@@ -2,6 +2,7 @@
 
 import library_bridge
 
+library_bridge.bridge.export_object('L', L)
 library_bridge.bridge.export_object('R', R)
 library_bridge.bridge.export_object('Log', Log)
 library_bridge.bridge.export_object('Datetime', Datetime)
