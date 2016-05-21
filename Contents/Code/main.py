@@ -50,7 +50,7 @@ def HandleLetter(name, authors):
         path = author['path']
 
         oc.add(DirectoryObject(
-            key=Callback(HandleAuthor, type='author', path=path, name=name),
+            key=Callback(HandleAuthor, type='author', id=path, name=name),
             title=name
         ))
 
@@ -64,7 +64,7 @@ def HandleAuthor(operation=None, **params):
 
     oc = ObjectContainer(title2=unicode(L(params['name'])))
 
-    response = service.get_author_books(params['path'])
+    response = service.get_author_books(params['id'])
 
     for item in response:
         path = item['path']
@@ -217,7 +217,7 @@ def HandleSearch(query=None):
         path = movie['path']
 
         oc.add(DirectoryObject(
-            key=Callback(HandleContainer, type='tracks', path=path, name=name),
+            key=Callback(HandleContainer, type='tracks', id=path, name=name),
             title=unicode(name)
         ))
 
