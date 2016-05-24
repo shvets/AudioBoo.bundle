@@ -37,6 +37,9 @@ class AudiobooService(HttpService):
             href = item.xpath('@href')[0]
             name = item.text_content()
 
+            if name[0:5] == 'ALIAS':
+                continue
+
             group_name = name[0:3].upper()
 
             if group_name not in groups.keys():
@@ -46,7 +49,65 @@ class AudiobooService(HttpService):
 
             groups[group_name].append({'path': href, 'name': name})
 
-        return groups
+        # sum = 0
+        # for name in groups:
+        #     print name + ": " + str(len(groups[name]))
+        #     sum += len(groups[name])
+        #
+        # print sum
+
+        return self.merge_small_groups(groups)
+
+        # sum = 0
+        # for new_group in new_groups:
+        #     print new_group
+        #     sum2 = 0
+        #     for name in new_group:
+        #         print name + ": " + str(len(groups[name]))
+        #         sum += len(groups[name])
+        #         sum2 += len(groups[name])
+        #
+        #     print sum2
+        #
+        # print sum
+
+        # for new_group in new_groups:
+        #     print(len(new_group))
+
+    def merge_small_groups(self, groups):
+        # merge groups into bigger groups with size ~ 20 records
+
+        classifier = []
+
+        group_size = 0
+        classifier.append([])
+        index = 0
+
+        for group_name in groups:
+            group_weight = len(groups[group_name])
+            group_size += group_weight
+
+            if group_size > 20:
+                group_size = 0
+                classifier.append([])
+                index = index+1
+
+            classifier[index].append(group_name)
+
+        # flatten records from different group within same classification
+        # assign new name in format first_name-last_name, e.g. ABC-AZZ
+
+        new_groups = OrderedDict()
+
+        for group_names in classifier:
+            key = group_names[0] + "-" + group_names[len(group_names)-1]
+            new_groups[key] = []
+
+            for group_name in group_names:
+                for item in groups[group_name]:
+                    new_groups[key].append(item)
+
+        return new_groups
 
     def get_author_books(self, url):
         list = []
@@ -60,7 +121,12 @@ class AudiobooService(HttpService):
             href = item.find('div/div/[@class="biography-image"]/a').get("href")
             thumb = item.find('div/div/[@class="biography-image"]/a/img').get("src")
             content = item.find('div/[@class="biography-content"]/div').text
-            rating = item.find('div[@class="biography-content"]/div/div[@class="rating"]/ul/li').text
+            rating_node = item.find('div[@class="biography-content"]/div/div[@class="rating"]/ul/li')
+
+            if rating_node:
+                rating = rating_node.text
+            else:
+                rating = ''
 
             list.append({'path': href, 'name': name, 'thumb': thumb, 'content': content, 'rating': rating})
 
