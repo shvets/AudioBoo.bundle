@@ -60,7 +60,7 @@ class AudioBooServiceTest(unittest.TestCase):
 
         playlist_urls = self.service.get_playlist_urls(url)
 
-        print result
+        print playlist_urls
 
     def test_get_audio_tracks(self):
         letters = self.service.get_letters()
@@ -83,6 +83,13 @@ class AudioBooServiceTest(unittest.TestCase):
         result = self.service.search(query)
 
         print(json.dumps(result, indent=4))
+
+    def test_convert_track_duration(self):
+        s = "14:46"
+
+        result = self.service.convert_track_duration(s)
+
+        print(result)
 
     def get_author_group_by_index(self, authors, index):
         i = 0

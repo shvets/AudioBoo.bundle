@@ -1,12 +1,20 @@
 # -*- coding: utf-8 -*-
 
+PREFIX = '/video/audioboo'
+
+ART = 'art-default.jpg'
+ICON = 'icon-default.png'
+
 import library_bridge
 
 library_bridge.bridge.export_object('L', L)
 library_bridge.bridge.export_object('R', R)
 library_bridge.bridge.export_object('Log', Log)
+library_bridge.bridge.export_object('Resource', Resource)
 library_bridge.bridge.export_object('Datetime', Datetime)
 library_bridge.bridge.export_object('Core', Core)
+library_bridge.bridge.export_object('Prefs', Prefs)
+library_bridge.bridge.export_object('Locale', Locale)
 library_bridge.bridge.export_object('Callback', Callback)
 library_bridge.bridge.export_object('AudioCodec', AudioCodec)
 library_bridge.bridge.export_object('AudioStreamObject', AudioStreamObject)
@@ -19,9 +27,11 @@ library_bridge.bridge.export_object('TVShowObject', TVShowObject)
 library_bridge.bridge.export_object('MovieObject', MovieObject)
 library_bridge.bridge.export_object('TrackObject', TrackObject)
 library_bridge.bridge.export_object('VideoClipObject', VideoClipObject)
+library_bridge.bridge.export_object('MessageContainer', MessageContainer)
 
-import util
-import constants
+import plex_util
+import common_routes
+
 from audioboo_plex_service import AudiobooPlexService
 
 service = AudiobooPlexService()
@@ -34,14 +44,14 @@ def Start():
     Plugin.AddViewGroup('PanelStream', viewMode='PanelStream', mediaType='items')
     Plugin.AddViewGroup('MediaPreview', viewMode='MediaPreview', mediaType='items')
 
-    DirectoryObject.art = R(constants.ART)
-    VideoClipObject.art = R(constants.ART)
+    DirectoryObject.art = R(ART)
+    VideoClipObject.art = R(ART)
 
     HTTP.CacheTime = CACHE_1HOUR
 
-    util.validate_prefs()
+    plex_util.validate_prefs()
 
-@handler(constants.PREFIX, 'AudioBoo', R(constants.ART), R(constants.ICON))
+@handler(PREFIX, 'AudioBoo', R(ART), R(ICON))
 def MainMenu():
     if not service.available():
         return MessageContainer(L('Error'), L('Service not avaliable'))
@@ -49,8 +59,8 @@ def MainMenu():
     oc = ObjectContainer(title2=unicode(L('Title')), no_cache=True)
 
     oc.add(DirectoryObject(key=Callback(main.HandleLetters), title=unicode(L('Authors'))))
-    oc.add(DirectoryObject(key=Callback(main.HandleHistory), title=unicode(L('History'))))
-    oc.add(DirectoryObject(key=Callback(main.HandleQueue), title=unicode(L('Queue'))))
+    oc.add(DirectoryObject(key=Callback(common_routes.HandleHistory), title=unicode(L('History'))))
+    oc.add(DirectoryObject(key=Callback(common_routes.HandleQueue), title=unicode(L('Queue'))))
 
     oc.add(InputDirectoryObject(
         key=Callback(main.HandleSearch),

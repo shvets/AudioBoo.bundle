@@ -12,7 +12,7 @@ class AudiobooService(HttpService):
         return True
 
     def get_letters(self):
-        list = []
+        data = []
 
         document = self.fetch_document(self.URL)
 
@@ -22,9 +22,9 @@ class AudiobooService(HttpService):
             href = item.xpath('@href')[0]
             name = item.text_content().upper()
 
-            list.append({'path': href, 'name': name})
+            data.append({'path': href, 'name': name})
 
-        return list
+        return data
 
     def get_authors_by_letter(self, path):
         groups = OrderedDict()
@@ -110,7 +110,7 @@ class AudiobooService(HttpService):
         return new_groups
 
     def get_author_books(self, url):
-        list = []
+        data = []
 
         document = self.fetch_document(url)
 
@@ -128,24 +128,24 @@ class AudiobooService(HttpService):
             else:
                 rating = ''
 
-            list.append({'path': href, 'name': name, 'thumb': thumb, 'content': content, 'rating': rating})
+            data.append({'path': href, 'name': name, 'thumb': thumb, 'content': content, 'rating': rating})
 
-        return list
+        return data
 
     def get_playlist_urls(self, url):
-        list = []
+        data = []
 
         document = self.fetch_document(url)
 
         result = document.xpath('//object')
 
         for item in result:
-            list.append(item.get("data"))
+            data.append(item.get("data"))
 
-        return list
+        return data
 
     def get_audio_tracks(self, url):
-        list = []
+        data = []
 
         document = self.fetch_document(url)
 
@@ -162,9 +162,9 @@ class AudiobooService(HttpService):
 
                 content = content[2:len(content) - 1].strip()
 
-                list.append(json.loads(content))
+                data.append(json.loads(content))
 
-        return list[0]
+        return data[0]
 
     def search(self, query):
         url = self.URL + "/engine/ajax/search.php"
@@ -175,7 +175,7 @@ class AudiobooService(HttpService):
 
         document = self.to_document(content)
 
-        list = []
+        data = []
 
         items = document.xpath('a')
 
@@ -183,12 +183,12 @@ class AudiobooService(HttpService):
             href = item.xpath('@href')[0]
             name = item.text_content().upper()
 
-            list.append({'path': href, 'name': name})
+            data.append({'path': href, 'name': name})
 
-        return list
+        return data
 
     def convert_track_duration(self, s):
-        tokens = str(s).split('.')
+        tokens = str(s).split(':')
 
         result = []
 
@@ -198,11 +198,17 @@ class AudiobooService(HttpService):
             if data:
                 result.append(data.group(0))
 
-        minutes = int(result[0])
+        hours = 0
+        minutes = 0
 
-        if len(result) > 1:
+        if len(result) > 2:
+            hours = int(result[0])
+            minutes = int(result[1])
+            seconds = int(result[2])
+        elif len(result) > 1:
+            minutes = int(result[0])
             seconds = int(result[1])
         else:
-            seconds = 0
+            seconds = int(result[0])
 
-        return minutes * 60 + seconds
+        return (hours * 60 * 60 + minutes * 60 + seconds) * 1000

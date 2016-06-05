@@ -1,16 +1,14 @@
 # -*- coding: utf-8 -*-
 
-import json
-
-import constants
-import util
+from collections import OrderedDict
 import history
-from flow_builder import FlowBuilder
+import common_routes
 from media_info import MediaInfo
+from flow_builder import FlowBuilder
 
 builder = FlowBuilder()
 
-@route(constants.PREFIX + '/letters')
+@route(PREFIX + '/letters')
 def HandleLetters():
     oc = ObjectContainer(title2=unicode(L("Letters")))
 
@@ -27,7 +25,7 @@ def HandleLetters():
 
     return oc
 
-@route(constants.PREFIX + '/letter_group')
+@route(PREFIX + '/letter_group')
 def HandleLetterGroup(path, name):
     oc = ObjectContainer(title2=unicode(L(name)))
 
@@ -35,17 +33,17 @@ def HandleLetterGroup(path, name):
 
     for group_name, authors in response.iteritems():
         oc.add(DirectoryObject(
-            key=Callback(HandleLetter, name=group_name, authors=json.dumps(authors)),
+            key=Callback(HandleLetter, name=group_name, authors=authors),
             title=group_name
         ))
 
     return oc
 
-@route(constants.PREFIX + '/letter')
+@route(PREFIX + '/letter', authors=list)
 def HandleLetter(name, authors):
     oc = ObjectContainer(title2=unicode(L(name)))
 
-    for author in json.loads(authors):
+    for author in authors:
         name = author['name']
         path = author['path']
 
@@ -56,7 +54,7 @@ def HandleLetter(name, authors):
 
     return oc
 
-@route(constants.PREFIX + '/author')
+@route(PREFIX + '/author')
 def HandleAuthor(operation=None, **params):
     media_info = MediaInfo(**params)
 
@@ -93,7 +91,7 @@ def HandleAuthor(operation=None, **params):
 
     return oc
 
-@route(constants.PREFIX + '/tracks_versions')
+@route(PREFIX + '/tracks_versions')
 def HandleTracksVersions(**params):
     playlist_urls = service.get_playlist_urls(params['id'])
 
@@ -110,10 +108,8 @@ def HandleTracksVersions(**params):
 
         return oc
 
-@route(constants.PREFIX + '/tracks')
+@route(PREFIX + '/tracks')
 def HandleTracks(operation=None, container=False, **params):
-    Log(params['playlist_url'])
-
     media_info = MediaInfo(**params)
 
     service.queue.handle_bookmark_operation(operation, media_info)
@@ -130,8 +126,6 @@ def HandleTracks(operation=None, container=False, **params):
         path = "https://archive.org" + sources[0]['file']
         format = 'mp3'
         bitrate = 0
-
-        # Log(thumb)
 
         new_params = {
             'type': 'track',
@@ -155,10 +149,7 @@ def HandleTracks(operation=None, container=False, **params):
 
     return oc
 
-@route(constants.PREFIX + '/track')
-def HandleTrack(container=False, **params):
-    media_info = MediaInfo(**params)
-
+def build_urls_with_metadata(media_info):
     if 'm4a' in media_info['format']:
         audio_container = Container.MP4
         audio_codec = AudioCodec.AAC
@@ -166,47 +157,61 @@ def HandleTrack(container=False, **params):
         audio_container = Container.MP3
         audio_codec = AudioCodec.MP3
 
-    url_items = [
-        {
-            "url": media_info['id'],
-            "config": {
-                "container": audio_container,
-                "audio_codec": audio_codec,
-                "bitrate": media_info['bitrate'],
-                "duration": media_info['duration']
-            }
-        }
-    ]
+    url = media_info['id']
 
-    track = AudioMetadataObjectForURL(media_info, url_items=url_items, player=PlayAudio)
+    urls_with_metadata = OrderedDict()
 
-    if container:
-        oc = ObjectContainer(title2=unicode(media_info['name']))
+    urls_with_metadata[url] = {
+        "container": audio_container,
+        "audio_codec": audio_codec,
+        "bitrate": media_info['bitrate'],
+        "duration": media_info['duration']
+    }
 
-        oc.add(track)
+    return urls_with_metadata
 
-        return oc
-    else:
-        return track
+@route(PREFIX + '/track')
+def HandleTrack(container=False, **params):
+    Log(params)
+    media_info = MediaInfo(**params)
 
-def AudioMetadataObjectForURL(media_info, url_items, player):
+    urls = build_urls_with_metadata(media_info)
+
     metadata_object = builder.build_metadata_object(media_type=media_info['type'], title=media_info['name'])
 
     metadata_object.key = Callback(HandleTrack, container=True, **media_info)
     metadata_object.rating_key = unicode(media_info['name'])
+    metadata_object.title = media_info['name']
+    metadata_object.artist = media_info['name']
     metadata_object.thumb = media_info['thumb']
 
     if 'duration' in media_info:
-        metadata_object.duration = int(media_info['duration']) * 1000
+        metadata_object.duration = int(media_info['duration'])
 
     if 'artist' in media_info:
         metadata_object.artist = media_info['artist']
 
-    metadata_object.items.extend(MediaObjectsForURL(url_items, player))
+    metadata_object.items.extend(common_routes.MediaObjectsForURL(urls, common_routes.PlayAudio))
 
-    return metadata_object
+    if container:
+        oc = ObjectContainer(title2=unicode(media_info['name']))
 
-@route(constants.PREFIX + '/search')
+        oc.add(metadata_object)
+
+        return oc
+    else:
+        return metadata_object
+
+@route(PREFIX + '/container')
+def HandleContainer(**params):
+    type = params['type']
+
+    if type == 'author':
+        return HandleAuthor(**params)
+    elif type == 'tracks':
+        return HandleTracks(**params)
+
+@route(PREFIX + '/search')
 def HandleSearch(query=None):
     oc = ObjectContainer(title2=unicode(L('Search')))
 
@@ -223,76 +228,3 @@ def HandleSearch(query=None):
 
     return oc
 
-@route(constants.PREFIX + '/container')
-def HandleContainer(**params):
-    type = params['type']
-
-    if type == 'author':
-        return HandleAuthor(**params)
-    elif type == 'tracks':
-        return HandleTracks(**params)
-
-@route(constants.PREFIX + '/queue')
-def HandleQueue():
-    oc = ObjectContainer(title2=unicode(L('Queue')))
-
-    for media_info in service.queue.data:
-        if 'thumb' in media_info:
-            thumb = media_info['thumb']
-        else:
-            thumb = None
-
-        oc.add(DirectoryObject(
-            key=Callback(HandleContainer, **media_info),
-            title=util.sanitize(media_info['name']),
-            thumb=thumb
-        ))
-
-    if len(service.queue.data) > 0:
-        oc.add(DirectoryObject(
-            key=Callback(ClearQueue),
-            title=unicode(L("Clear Queue"))
-        ))
-
-    return oc
-
-@route(constants.PREFIX + '/clear_queue')
-def ClearQueue():
-    service.queue.clear()
-
-    return HandleQueue()
-
-@route(constants.PREFIX + '/history')
-def HandleHistory():
-    history_object = history.load_history(Data)
-
-    oc = ObjectContainer(title2=unicode(L('History')))
-
-    if history_object:
-        for item in sorted(history_object.values(), key=lambda k: k['time'], reverse=True):
-            oc.add(DirectoryObject(
-                key=Callback(HandleContainer, **item),
-                title=unicode(item['name']),
-                thumb=item['thumb']
-            ))
-
-    return oc
-
-def MediaObjectsForURL(url_items, player):
-    media_objects = []
-
-    for item in url_items:
-        url = item['url']
-        config = item['config']
-
-        play_callback = Callback(player, url=url)
-
-        media_object = builder.build_media_object(play_callback, config)
-
-        media_objects.append(media_object)
-
-    return media_objects
-
-@route(constants.PREFIX + '/play_audio')
-def PlayAudio(url):
-    return Redirect(url)
