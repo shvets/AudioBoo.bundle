@@ -61,8 +61,8 @@ def MainMenu():
     oc = ObjectContainer(title2=unicode(L('Title')), no_cache=True)
 
     oc.add(DirectoryObject(key=Callback(main.HandleLetters), title=unicode(L('Authors'))))
-    oc.add(DirectoryObject(key=Callback(common_routes.HandleHistory), title=unicode(L('History'))))
-    oc.add(DirectoryObject(key=Callback(common_routes.HandleQueue), title=unicode(L('Queue'))))
+    oc.add(DirectoryObject(key=Callback(main.HandleHistory), title=unicode(L('History'))))
+    oc.add(DirectoryObject(key=Callback(main.HandleQueue), title=unicode(L('Queue'))))
 
     oc.add(InputDirectoryObject(
         key=Callback(main.HandleSearch),
