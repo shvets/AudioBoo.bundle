@@ -15,6 +15,41 @@ class FlowBuilder():
     def build_media_object(self, play_callback, config):
         if config is None:
             config = {}
+
+        media_object = MediaObject()
+
+        if 'optimized_for_streaming' in config.keys():
+            media_object.protocol = config['optimized_for_streaming']
+        else:
+            media_object.optimized_for_streaming = True
+
+        if 'protocol' in config.keys():
+            media_object.protocol = config['protocol']
+        # else:
+        #     media_object.protocol = Protocol.HLS
+
+        if 'container' in config.keys():
+            media_object.container = config['container']
+        # else:
+        #     media_object.container = Container.MPEGTS
+
+        if 'video_resolution' in config.keys():
+            media_object.video_resolution = config['video_resolution']
+
+        # if 'width' in config.keys():
+        #     media_object.width = config['width']
+        #
+        # if 'height' in config.keys():
+        #     media_object.height = config['height']
+
+        part_object = self.build_part_object(config)
+        part_object.key = play_callback
+
+        media_object.parts = [part_object]
+
+        return media_object
+
+    def build_part_object(self, config):
         audio_stream = AudioStreamObject()
 
         audio_stream.channels = 2
@@ -37,40 +72,18 @@ class FlowBuilder():
         # else:
         #     video_stream.codec = VideoCodec.H264
 
+
+        if 'width' in config.keys():
+            video_stream.width = config['width']
+
+        if 'height' in config.keys():
+            video_stream.height = config['height']
+
         part_object = PartObject(
-            key=play_callback,
             streams=[audio_stream, video_stream]
         )
 
-        media_object = MediaObject()
-
-        if 'optimized_for_streaming' in config.keys():
-            media_object.protocol = config['optimized_for_streaming']
-        else:
-            media_object.optimized_for_streaming = True
-
-        if 'protocol' in config.keys():
-            media_object.protocol = config['protocol']
-        # else:
-        #     media_object.protocol = Protocol.HLS
-
-        if 'container' in config.keys():
-            media_object.container = config['container']
-        # else:
-        #     media_object.container = Container.MPEGTS
-
-        if 'video_resolution' in config.keys():
-            media_object.video_resolution = config['video_resolution']
-
-        if 'width' in config.keys():
-            media_object.video_resolution = config['width']
-
-        if 'height' in config.keys():
-            media_object.video_resolution = config['height']
-
-        media_object.parts = [part_object]
-
-        return media_object
+        return part_object
 
     def build_metadata_object(self, media_type, title):
         if media_type == 'episode':
