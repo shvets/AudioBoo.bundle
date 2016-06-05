@@ -2,6 +2,7 @@ import library_bridge
 
 AudioStreamObject = library_bridge.bridge.objects['AudioStreamObject']
 AudioCodec = library_bridge.bridge.objects['AudioCodec']
+VideoCodec = library_bridge.bridge.objects['VideoCodec']
 VideoStreamObject = library_bridge.bridge.objects['VideoStreamObject']
 PartObject = library_bridge.bridge.objects['PartObject']
 MediaObject = library_bridge.bridge.objects['MediaObject']
@@ -10,9 +11,11 @@ TVShowObject = library_bridge.bridge.objects['TVShowObject']
 MovieObject = library_bridge.bridge.objects['MovieObject']
 TrackObject = library_bridge.bridge.objects['TrackObject']
 VideoClipObject = library_bridge.bridge.objects['VideoClipObject']
+Container = library_bridge.bridge.objects['Container']
 
 class FlowBuilder():
-    def build_media_object(self, play_callback, config):
+    @staticmethod
+    def build_media_object(play_callback, config):
         if config is None:
             config = {}
 
@@ -42,14 +45,15 @@ class FlowBuilder():
         # if 'height' in config.keys():
         #     media_object.height = config['height']
 
-        part_object = self.build_part_object(config)
+        part_object = FlowBuilder.build_part_object(config)
         part_object.key = play_callback
 
         media_object.parts = [part_object]
 
         return media_object
 
-    def build_part_object(self, config):
+    @staticmethod
+    def build_part_object(config):
         audio_stream = AudioStreamObject()
 
         audio_stream.channels = 2
@@ -85,7 +89,8 @@ class FlowBuilder():
 
         return part_object
 
-    def build_metadata_object(self, media_type, title):
+    @staticmethod
+    def build_metadata_object(media_type, title):
         if media_type == 'episode':
             metadata_object = EpisodeObject()
 
@@ -110,3 +115,60 @@ class FlowBuilder():
             metadata_object.title = title
 
         return metadata_object
+
+    @staticmethod
+    def get_plex_config(format):
+        container = None
+        video_codec = None
+        audio_codec = None
+
+        if format == 'mp3':
+            container = Container.MP3
+            audio_codec = AudioCodec.MP3
+
+        elif format == 'flac':
+            container = Container.FLAC
+            audio_codec = AudioCodec.FLAC
+
+        elif format == 'ogg':
+            container = Container.OGG
+            audio_codec = AudioCodec.VORBIS
+
+        elif format == 'm4a':
+            container = Container.MP4
+            audio_codec = AudioCodec.AAC
+
+        elif format == 'mp4':
+            container = Container.MP4
+            video_codec = VideoCodec.H264
+            audio_codec = AudioCodec.AAC
+
+        elif format == 'avi':
+            container = Container.AVI
+            video_codec = 'mpeg4'
+            audio_codec = AudioCodec.MP3
+
+        elif format == 'ogv':
+            container = Container.OGG
+            video_codec = VideoCodec.THEORA
+            audio_codec = AudioCodec.VORBIS
+
+        elif format == 'wmv':
+            container = 'wmv'
+            video_codec = 'wmv3'
+            audio_codec = 'wmvav2'
+
+        elif format == 'mkv':
+            container = Container.MKV
+            video_codec = VideoCodec.H264
+            audio_codec = AudioCodec.AAC
+
+        if container:
+            return {
+                'container': container,
+                'video_codec': video_codec,
+                'audio_codec': audio_codec
+
+            }
+        else:
+            return None

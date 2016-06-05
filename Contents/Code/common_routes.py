@@ -1,7 +1,10 @@
 import plex_util
+import history
 from flow_builder import FlowBuilder
 
-builder = FlowBuilder()
+from audioboo_plex_service import AudiobooPlexService
+
+service = AudiobooPlexService()
 
 @route(PREFIX + '/queue')
 def HandleQueue():
@@ -55,7 +58,7 @@ def MediaObjectsForURL(urls, player):
     for url, config in urls.iteritems():
         play_callback = Callback(player, url=url)
 
-        media_object = builder.build_media_object(play_callback, config)
+        media_object = FlowBuilder.build_media_object(play_callback, config)
 
         media_objects.append(media_object)
 

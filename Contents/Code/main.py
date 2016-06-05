@@ -6,8 +6,6 @@ import common_routes
 from media_info import MediaInfo
 from flow_builder import FlowBuilder
 
-builder = FlowBuilder()
-
 @route(PREFIX + '/letters')
 def HandleLetters():
     oc = ObjectContainer(title2=unicode(L("Letters")))
@@ -60,23 +58,33 @@ def HandleAuthor(operation=None, **params):
 
     service.queue.handle_bookmark_operation(operation, media_info)
 
-    oc = ObjectContainer(title2=unicode(L(params['name'])))
+    author = params['name']
+
+    oc = ObjectContainer(title2=unicode(L(author)))
 
     response = service.get_author_books(params['id'])
 
     for item in response:
         path = item['path']
-        book_name = item['name']
+        full_name = item['name']
         content = item['content']
         rating = item['rating']
         thumb = service.URL + item['thumb']
+
+        full_name_decoded = full_name.decode('utf-8')
+        prefix = (author + ' - ').decode('utf-8')
+
+        if full_name_decoded[0:len(prefix)] == prefix:
+            book_name = full_name[len(prefix):]
+        else:
+            book_name = full_name
 
         params = {
             'type': 'tracks',
             'id' : path,
             'name': book_name,
             'thumb': thumb,
-            'artist': params['name'],
+            'artist': author,
             'content': content,
             'rating': rating
         }
@@ -138,9 +146,6 @@ def HandleTracks(operation=None, container=False, **params):
             'duration': duration
         }
 
-        if 'artist' in params:
-            new_params['artist'] = media_info['artist']
-
         oc.add(HandleTrack(**new_params))
 
     if str(container) == 'False':
@@ -151,33 +156,30 @@ def HandleTracks(operation=None, container=False, **params):
 
 def build_urls_with_metadata(media_info):
     if 'm4a' in media_info['format']:
-        audio_container = Container.MP4
-        audio_codec = AudioCodec.AAC
+        format = 'm4a'
     else:
-        audio_container = Container.MP3
-        audio_codec = AudioCodec.MP3
+        format = 'mp3'
+
+    config = FlowBuilder.get_plex_config(format)
+
+    config["bitrate"] = media_info['bitrate']
+    config["duration"] = media_info['duration']
 
     url = media_info['id']
 
     urls_with_metadata = OrderedDict()
 
-    urls_with_metadata[url] = {
-        "container": audio_container,
-        "audio_codec": audio_codec,
-        "bitrate": media_info['bitrate'],
-        "duration": media_info['duration']
-    }
+    urls_with_metadata[url] = config
 
     return urls_with_metadata
 
 @route(PREFIX + '/track')
 def HandleTrack(container=False, **params):
-    Log(params)
     media_info = MediaInfo(**params)
 
     urls = build_urls_with_metadata(media_info)
 
-    metadata_object = builder.build_metadata_object(media_type=media_info['type'], title=media_info['name'])
+    metadata_object = FlowBuilder.build_metadata_object(media_type=media_info['type'], title=media_info['name'])
 
     metadata_object.key = Callback(HandleTrack, container=True, **media_info)
     metadata_object.rating_key = unicode(media_info['name'])
