@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from collections import OrderedDict
 import history
 import common_routes
 from media_info import MediaInfo
@@ -154,30 +153,21 @@ def HandleTracks(operation=None, container=False, **params):
 
     return oc
 
-def build_urls_with_metadata(media_info):
+@route(PREFIX + '/track')
+def HandleTrack(container=False, **params):
+    media_info = MediaInfo(**params)
+
+    url = media_info['id']
+
     if 'm4a' in media_info['format']:
         format = 'm4a'
     else:
         format = 'mp3'
 
-    config = FlowBuilder.get_plex_config(format)
+    metadata = FlowBuilder.get_metadata(format)
 
-    config["bitrate"] = media_info['bitrate']
-    config["duration"] = media_info['duration']
-
-    url = media_info['id']
-
-    urls_with_metadata = OrderedDict()
-
-    urls_with_metadata[url] = config
-
-    return urls_with_metadata
-
-@route(PREFIX + '/track')
-def HandleTrack(container=False, **params):
-    media_info = MediaInfo(**params)
-
-    urls = build_urls_with_metadata(media_info)
+    metadata["bitrate"] = media_info['bitrate']
+    metadata["duration"] = media_info['duration']
 
     metadata_object = FlowBuilder.build_metadata_object(media_type=media_info['type'], title=media_info['name'])
 
@@ -193,7 +183,9 @@ def HandleTrack(container=False, **params):
     if 'artist' in media_info:
         metadata_object.artist = media_info['artist']
 
-    metadata_object.items.extend(common_routes.MediaObjectsForURL(urls, common_routes.PlayAudio))
+    media_object = FlowBuilder.build_media_object(Callback(common_routes.PlayAudio, url=url), metadata)
+
+    metadata_object.items.append(media_object)
 
     if container:
         oc = ObjectContainer(title2=unicode(media_info['name']))
@@ -224,7 +216,7 @@ def HandleSearch(query=None):
         path = movie['path']
 
         oc.add(DirectoryObject(
-            key=Callback(HandleContainer, type='tracks', id=path, name=name),
+            key=Callback(HandleAuthor, id=path, name=name),
             title=unicode(name)
         ))
 
