@@ -87,7 +87,7 @@ class AudiobooService(HttpService):
             group_weight = len(groups[group_name])
             group_size += group_weight
 
-            if group_size > 20:
+            if group_size > 20 or self.starts_with_different_letter(classifier[index], group_name):
                 group_size = 0
                 classifier.append([])
                 index = index+1
@@ -108,6 +108,16 @@ class AudiobooService(HttpService):
                     new_groups[key].append(item)
 
         return new_groups
+
+    def starts_with_different_letter(self, list, name):
+        result = False
+
+        for n in list:
+            if name[0] != n[0]:
+                result = True
+                break
+
+        return result
 
     def get_author_books(self, url):
         data = []
