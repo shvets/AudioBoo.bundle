@@ -130,7 +130,7 @@ def HandleTracks(operation=None, container=False, **params):
         duration = service.convert_track_duration(item['duration'])
         sources = item['sources']
         thumb = service.URL + item['image']
-        path = "https://archive.org" + sources[0]['file']
+        path = service.ARCHIVE_URL + sources[0]['file']
         format = 'mp3'
         bitrate = 0
 

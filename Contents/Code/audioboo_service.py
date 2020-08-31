@@ -7,6 +7,7 @@ from http_service import HttpService
 
 class AudiobooService(HttpService):
     URL = 'http://audioboo.ru'
+    ARCHIVE_URL = "https://archive.org"
 
     def available(self):
         return True
@@ -127,10 +128,10 @@ class AudiobooService(HttpService):
         items = document.xpath('//div[@class="biography-main"]')
 
         for item in items:
-            name = item.find('div/[@class="biography-title"]/h2/a').text
-            href = item.find('div/div/[@class="biography-image"]/a').get("href")
-            thumb = item.find('div/div/[@class="biography-image"]/a/img').get("src")
-            content = item.find('div/[@class="biography-content"]/div').text
+            name = item.find('div[@class="biography-title"]/h2/a').text
+            href = item.find('div/div[@class="biography-image"]/a').get("href")
+            thumb = item.find('div/div[@class="biography-image"]/a/img').get("src")
+            content = item.find('div[@class="biography-content"]/div').text
             rating_node = item.find('div[@class="biography-content"]/div/div[@class="rating"]/ul/li')
 
             if rating_node:

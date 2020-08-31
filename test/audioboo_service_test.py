@@ -28,7 +28,7 @@ class AudioBooServiceTest(unittest.TestCase):
 
         authors = self.service.get_authors_by_letter(letters[0]['path'])
 
-        result = self.service.get_author_books(authors[1]['path'])
+        result = self.service.get_author_books(authors[authors.keys()[1]][0]['path'])
 
         print(json.dumps(result, indent=4))
 
